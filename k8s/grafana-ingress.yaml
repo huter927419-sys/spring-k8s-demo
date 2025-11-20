@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: default
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - grafana.flashswap09.online
+    secretName: grafana-tls
+  rules:
+  - host: grafana.flashswap09.online
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000

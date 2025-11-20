@@ -1,0 +1,144 @@
+# ============================================================================
+# Spring Boot Application Deployment
+# Spring Boot 应用程序部署配置
+# ============================================================================
+# 
+# This deployment configures the Spring Boot backend application with:
+# - 3 replicas for high availability
+# - Security context for non-root execution
+# - Environment variables from Kubernetes Secrets and ConfigMaps
+# - Health probes for liveness and readiness
+# - Resource limits and requests
+# - Horizontal Pod Autoscaler support
+#
+# 该部署配置 Spring Boot 后端应用程序，包括：
+# - 3 个副本以实现高可用性
+# - 非 root 执行的安全上下文
+# - 来自 Kubernetes Secrets 和 ConfigMaps 的环境变量
+# - 用于存活性就绪性的健康探针
+# - 资源限制和请求
+# - 水平 Pod 自动扩缩容支持
+#
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-k8s-demo
+  labels:
+    app: spring-k8s-demo
+spec:
+  # Number of replicas / 副本数量
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-k8s-demo
+  template:
+    metadata:
+      labels:
+        app: spring-k8s-demo
+    spec:
+      # Pod Security Context - Run as non-root user
+      # Pod 安全上下文 - 以非 root 用户运行
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: spring-k8s-demo
+        # Container image / 容器镜像
+        image: spring-k8s-demo:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        # Container Security Context / 容器安全上下文
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        # Environment Variables / 环境变量
+        env:
+        - name: SPRING_APPLICATION_NAME
+          value: "spring-k8s-demo"
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_DATABASE
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: REDIS_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: JWT_SECRET
+        - name: JWT_EXPIRATION
+          value: "86400000"  # 24 hours in milliseconds / 24 小时（毫秒）
+        # Liveness Probe - Check if container is alive
+        # 存活性探针 - 检查容器是否存活
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 120  # Wait 2 minutes before first check / 首次检查前等待 2 分钟
+          periodSeconds: 30         # Check every 30 seconds / 每 30 秒检查一次
+          timeoutSeconds: 5
+          failureThreshold: 3       # Restart after 3 failures / 3 次失败后重启
+          successThreshold: 1
+        # Readiness Probe - Check if container is ready to serve traffic
+        # 就绪性探针 - 检查容器是否准备好处理流量
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 60  # Wait 1 minute before first check / 首次检查前等待 1 分钟
+          periodSeconds: 10        # Check every 10 seconds / 每 10 秒检查一次
+          timeoutSeconds: 3
+          failureThreshold: 3       # Mark as not ready after 3 failures / 3 次失败后标记为未就绪
+          successThreshold: 1
+        # Startup Probe - Allow more time for application startup
+        # 启动探针 - 允许应用程序有更多启动时间
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 0
+          periodSeconds: 10        # Check every 10 seconds / 每 10 秒检查一次
+          timeoutSeconds: 5
+          failureThreshold: 40     # Allow up to 400 seconds (6.7 minutes) for startup
+                                   # 允许最多 400 秒（6.7 分钟）启动时间
+        # Resource Limits and Requests / 资源限制和请求
+        resources:
+          requests:
+            memory: "512Mi"  # Minimum memory required / 所需最小内存
+            cpu: "300m"      # Minimum CPU required / 所需最小 CPU
+          limits:
+            memory: "1Gi"   # Maximum memory allowed / 允许的最大内存
+            cpu: "1000m"    # Maximum CPU allowed / 允许的最大 CPU
+

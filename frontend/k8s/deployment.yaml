@@ -1,0 +1,69 @@
+# ============================================================================
+# Frontend Application Deployment
+# 前端应用程序部署配置
+# ============================================================================
+#
+# This deployment configures the Vue.js frontend application with:
+# - 2 replicas for high availability
+# - Lightweight resource requirements (64-128MB memory)
+# - Health probes for liveness and readiness
+# - Nginx serving static files
+#
+# 该部署配置 Vue.js 前端应用程序，包括：
+# - 2 个副本以实现高可用性
+# - 轻量级资源需求（64-128MB 内存）
+# - 用于存活性就绪性的健康探针
+# - Nginx 提供静态文件服务
+#
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  # Number of replicas / 副本数量
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        # Container image / 容器镜像
+        image: spring-k8s-frontend:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+        # Resource Limits and Requests / 资源限制和请求
+        resources:
+          requests:
+            memory: "64Mi"   # Minimum memory required / 所需最小内存
+            cpu: "50m"      # Minimum CPU required / 所需最小 CPU
+          limits:
+            memory: "128Mi"  # Maximum memory allowed / 允许的最大内存
+            cpu: "100m"     # Maximum CPU allowed / 允许的最大 CPU
+        # Liveness Probe - Check if container is alive
+        # 存活性探针 - 检查容器是否存活
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10  # Wait 10 seconds before first check / 首次检查前等待 10 秒
+          periodSeconds: 10       # Check every 10 seconds / 每 10 秒检查一次
+        # Readiness Probe - Check if container is ready to serve traffic
+        # 就绪性探针 - 检查容器是否准备好处理流量
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5   # Wait 5 seconds before first check / 首次检查前等待 5 秒
+          periodSeconds: 5        # Check every 5 seconds / 每 5 秒检查一次
+

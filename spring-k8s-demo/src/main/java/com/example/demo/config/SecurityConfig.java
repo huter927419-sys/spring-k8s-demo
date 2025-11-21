@@ -37,7 +37,7 @@ import java.util.List;
  * 该配置类设置 Spring Security，包括 JWT 认证、
  * 速率限制、CORS 和无状态会话管理。
  */
-@Configuration
+@Configuration(proxyBeanMethods = false) // Disable CGLIB proxy for GraalVM Native Image compatibility
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {

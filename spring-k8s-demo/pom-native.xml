@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GraalVM Native Image Build Configuration
+  GraalVM Native Image 构建配置
+  
+  This POM includes GraalVM Native Image plugin configuration
+  for building native executables with ultra-fast startup.
+  
+  该 POM 包含 GraalVM Native Image 插件配置，
+  用于构建具有超快启动速度的 native 可执行文件。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <!-- Inherit from main POM / 继承主 POM -->
+    <parent>
+        <groupId>com.example</groupId>
+        <artifactId>spring-k8s-demo</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    
+    <artifactId>spring-k8s-demo-native</artifactId>
+    <name>spring-k8s-demo-native</name>
+    
+    <build>
+        <plugins>
+            <!-- GraalVM Native Image Maven Plugin / GraalVM Native Image Maven 插件 -->
+            <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
+                <version>0.10.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <mainClass>com.example.demo.SpringK8sDemoApplication</mainClass>
+                    <buildArgs>
+                        <buildArg>--no-fallback</buildArg>
+                        <buildArg>--install-exit-handlers</buildArg>
+                        <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                        <buildArg>-H:IncludeResources=.*</buildArg>
+                    </buildArgs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>build-native</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>compile-no-fork</goal>
+                            <goal>native-image</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+

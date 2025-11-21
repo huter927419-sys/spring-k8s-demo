@@ -1,0 +1,54 @@
+# ============================================================================
+# GraalVM Native Image Dockerfile
+# GraalVM Native Image Dockerfile
+# ============================================================================
+#
+# This Dockerfile builds a GraalVM Native Image for ultra-fast startup.
+# Expected startup time: 1-3 seconds (vs 60+ seconds with JVM)
+#
+# 该 Dockerfile 构建 GraalVM Native Image 以实现超快启动。
+# 预期启动时间：1-3 秒（相比 JVM 的 60+ 秒）
+#
+# ============================================================================
+
+# Stage 1: Build Native Image / 阶段 1：构建 Native Image
+FROM ghcr.io/graalvm/native-image-community:17-muslib AS build
+
+WORKDIR /app
+
+# Install Maven / 安装 Maven
+RUN microdnf install -y maven
+
+# Copy project files / 复制项目文件
+COPY pom.xml .
+COPY src ./src
+
+# Build application / 构建应用
+RUN mvn clean package -DskipTests -B
+
+# Build Native Image / 构建 Native Image
+# Note: This requires reflection configuration for Spring Boot
+# 注意：这需要 Spring Boot 的反射配置
+RUN native-image \
+    --no-fallback \
+    --install-exit-handlers \
+    -H:+ReportExceptionStackTraces \
+    -H:IncludeResources=".*" \
+    -H:ReflectionConfigurationFiles=reflect-config.json \
+    -jar target/spring-k8s-demo-*.jar \
+    app
+
+# Stage 2: Minimal runtime image / 阶段 2：最小运行时镜像
+FROM gcr.io/distroless/base-debian12:nonroot
+
+WORKDIR /app
+
+# Copy native executable / 复制 native 可执行文件
+COPY --from=build /app/app /app/app
+
+# Expose port / 暴露端口
+EXPOSE 8080
+
+# Run native executable / 运行 native 可执行文件
+ENTRYPOINT ["/app/app"]
+

@@ -1,5 +1,16 @@
+<!--
+  Login.vue - User Login Component
+  用户登录组件 - 用户登录组件
+  
+  This component provides a user login form with email and password authentication.
+  It includes modern UI design with animations and form validation.
+  
+  该组件提供使用邮箱和密码认证的用户登录表单。
+  它包括现代化的 UI 设计和动画以及表单验证。
+-->
 <template>
   <div class="login-container">
+    <!-- Background with animated shapes / 带有动画形状的背景 -->
     <div class="login-background">
       <div class="background-shapes">
         <div class="shape shape-1"></div>
@@ -7,8 +18,10 @@
         <div class="shape shape-3"></div>
       </div>
     </div>
+    <!-- Login Form Content / 登录表单内容 -->
     <div class="login-content">
       <div class="login-card-wrapper">
+        <!-- Header Section / 头部区域 -->
         <div class="login-header">
           <div class="logo-container">
             <el-icon :size="48" class="logo-icon"><UserFilled /></el-icon>
@@ -16,6 +29,7 @@
           <h1 class="login-title">欢迎回来</h1>
           <p class="login-subtitle">登录您的账户以继续</p>
         </div>
+        <!-- Login Form Card / 登录表单卡片 -->
         <el-card class="login-card" shadow="hover">
           <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-position="top" class="login-form">
             <el-form-item label="邮箱地址" prop="email">
@@ -65,22 +79,43 @@
 </template>
 
 <script setup>
+/**
+ * Login.vue - User Login Component
+ * 用户登录组件
+ * 
+ * @description
+ * This component handles user authentication with email and password.
+ * It validates user credentials and manages login state.
+ * 
+ * 该组件处理使用邮箱和密码的用户认证。
+ * 它验证用户凭据并管理登录状态。
+ */
+
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../utils/auth'
 import { ElMessage } from 'element-plus'
 import { Message, Lock, User, UserFilled } from '@element-plus/icons-vue'
 
+// Router instance for navigation / 用于导航的路由实例
 const router = useRouter()
+
+// Authentication store for user login / 用于用户登录的认证存储
 const authStore = useAuthStore()
+
+// Form reference for validation / 用于验证的表单引用
 const loginFormRef = ref(null)
+
+// Loading state / 加载状态
 const loading = ref(false)
 
+// Login form data / 登录表单数据
 const loginForm = reactive({
   email: '',
   password: ''
 })
 
+// Form validation rules / 表单验证规则
 const rules = {
   email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
@@ -92,6 +127,19 @@ const rules = {
   ]
 }
 
+/**
+ * Handle user login
+ * 处理用户登录
+ * 
+ * @async
+ * @function handleLogin
+ * @description
+ * Validates the login form and calls the authentication service
+ * to authenticate the user. On success, redirects to the home page.
+ * 
+ * 验证登录表单并调用认证服务以认证用户。
+ * 成功后，重定向到首页。
+ */
 const handleLogin = async () => {
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {

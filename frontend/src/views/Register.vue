@@ -1,5 +1,16 @@
+<!--
+  Register.vue - User Registration Component
+  用户注册组件 - 用户注册组件
+  
+  This component provides a user registration form with validation.
+  It includes modern UI design with animations and form validation.
+  
+  该组件提供带验证的用户注册表单。
+  它包括现代化的 UI 设计和动画以及表单验证。
+-->
 <template>
   <div class="register-container">
+    <!-- Background with animated shapes / 带有动画形状的背景 -->
     <div class="register-background">
       <div class="background-shapes">
         <div class="shape shape-1"></div>
@@ -7,8 +18,10 @@
         <div class="shape shape-3"></div>
       </div>
     </div>
+    <!-- Registration Form Content / 注册表单内容 -->
     <div class="register-content">
       <div class="register-card-wrapper">
+        <!-- Header Section / 头部区域 -->
         <div class="register-header">
           <div class="logo-container">
             <el-icon :size="48" class="logo-icon"><UserFilled /></el-icon>
@@ -16,6 +29,7 @@
           <h1 class="register-title">创建账户</h1>
           <p class="register-subtitle">填写信息以创建新账户</p>
         </div>
+        <!-- Registration Form Card / 注册表单卡片 -->
         <el-card class="register-card" shadow="hover">
           <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-position="top" class="register-form">
             <el-form-item label="姓名" prop="name">
@@ -82,17 +96,37 @@
 </template>
 
 <script setup>
+/**
+ * Register.vue - User Registration Component
+ * 用户注册组件
+ * 
+ * @description
+ * This component handles user registration with form validation.
+ * It validates user input and calls the authentication service to create a new account.
+ * 
+ * 该组件处理带表单验证的用户注册。
+ * 它验证用户输入并调用认证服务以创建新账户。
+ */
+
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../utils/auth'
 import { ElMessage } from 'element-plus'
 import { Message, Lock, User, UserFilled, Phone } from '@element-plus/icons-vue'
 
+// Router instance for navigation / 用于导航的路由实例
 const router = useRouter()
+
+// Authentication store for user registration / 用于用户注册的认证存储
 const authStore = useAuthStore()
+
+// Form reference for validation / 用于验证的表单引用
 const registerFormRef = ref(null)
+
+// Loading state / 加载状态
 const loading = ref(false)
 
+// Registration form data / 注册表单数据
 const registerForm = reactive({
   name: '',
   email: '',
@@ -100,6 +134,7 @@ const registerForm = reactive({
   phone: ''
 })
 
+// Form validation rules / 表单验证规则
 const rules = {
   name: [
     { required: true, message: '请输入您的姓名', trigger: 'blur' },
@@ -115,6 +150,19 @@ const rules = {
   ]
 }
 
+/**
+ * Handle user registration
+ * 处理用户注册
+ * 
+ * @async
+ * @function handleRegister
+ * @description
+ * Validates the registration form and calls the authentication service
+ * to register a new user. On success, redirects to the home page.
+ * 
+ * 验证注册表单并调用认证服务以注册新用户。
+ * 成功后，重定向到首页。
+ */
 const handleRegister = async () => {
   await registerFormRef.value.validate(async (valid) => {
     if (valid) {

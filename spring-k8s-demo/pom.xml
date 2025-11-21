@@ -23,6 +23,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- GraalVM Native Image Plugin Version / GraalVM Native Image 插件版本 -->
+        <native.maven.plugin.version>0.10.1</native.maven.plugin.version>
     </properties>
     
     <dependencies>
@@ -114,6 +116,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- GraalVM Native Image Maven Plugin / GraalVM Native Image Maven 插件 -->
+            <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

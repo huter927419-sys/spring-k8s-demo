@@ -49,7 +49,9 @@ spec:
       containers:
       - name: spring-k8s-demo
         # Container image / 容器镜像
-        image: spring-k8s-demo:1.0.0
+        # Use GraalVM Native Image for ultra-fast startup (1-3 seconds vs 60+ seconds)
+        # 使用 GraalVM Native Image 实现超快启动（1-3 秒 vs 60+ 秒）
+        image: spring-k8s-demo-native:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

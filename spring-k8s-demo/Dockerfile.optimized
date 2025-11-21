@@ -1,0 +1,68 @@
+# ============================================================================
+# Optimized Dockerfile for Spring Boot Application
+# 优化的 Spring Boot 应用 Dockerfile
+# ============================================================================
+# 
+# This Dockerfile uses multi-stage build and optimizations:
+# - Smaller base image (distroless or alpine)
+# - JVM optimizations for faster startup
+# - Layer caching optimization
+#
+# 该 Dockerfile 使用多阶段构建和优化：
+# - 更小的基础镜像（distroless 或 alpine）
+# - JVM 优化以加快启动速度
+# - 层缓存优化
+#
+# ============================================================================
+
+# Stage 1: Build application / 阶段 1：构建应用
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+
+# Copy pom.xml first for better layer caching / 先复制 pom.xml 以优化层缓存
+COPY pom.xml .
+# Download dependencies (cached if pom.xml doesn't change) / 下载依赖（如果 pom.xml 不变则缓存）
+RUN mvn dependency:go-offline -B
+
+# Copy source code and build / 复制源代码并构建
+COPY src ./src
+RUN mvn clean package -DskipTests -B
+
+# Stage 2: Runtime image with optimizations / 阶段 2：优化的运行时镜像
+# Option 1: Use distroless (smallest, ~50MB) / 选项 1：使用 distroless（最小，约 50MB）
+FROM gcr.io/distroless/java17-debian12:nonroot
+
+# Option 2: Use Alpine (smaller than JRE, ~150MB) / 选项 2：使用 Alpine（比 JRE 小，约 150MB）
+# FROM eclipse-temurin:17-jre-alpine
+# RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy JAR file / 复制 JAR 文件
+COPY --from=build /app/target/spring-k8s-demo-*.jar app.jar
+
+# Expose port / 暴露端口
+EXPOSE 8080
+
+# Optimized JVM parameters for faster startup / 优化的 JVM 参数以加快启动速度
+# - Use G1GC for better startup performance / 使用 G1GC 以获得更好的启动性能
+# - Reduce initial heap size / 减小初始堆大小
+# - Enable class data sharing / 启用类数据共享
+# - Disable unnecessary features / 禁用不必要的功能
+ENV JAVA_OPTS="-XX:+UseG1GC \
+               -XX:MaxRAMPercentage=75.0 \
+               -XX:InitialRAMPercentage=50.0 \
+               -XX:+UseContainerSupport \
+               -XX:+UnlockExperimentalVMOptions \
+               -XX:+UseCGroupMemoryLimitForHeap \
+               -Djava.security.egd=file:/dev/./urandom \
+               -Dspring.jmx.enabled=false \
+               -Dspring.backgroundpreinitializer.ignore=true"
+
+# Health check / 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD ["/busybox/sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+
+# Run application with optimized JVM / 使用优化的 JVM 运行应用
+ENTRYPOINT ["java", "-jar", "app.jar"]
+

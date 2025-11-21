@@ -100,14 +100,23 @@ spec:
               key: JWT_SECRET
         - name: JWT_EXPIRATION
           value: "86400000"  # 24 hours in milliseconds / 24 小时（毫秒）
+        # JVM Optimization Parameters for Faster Startup
+        # JVM 优化参数以加快启动速度
+        - name: JAVA_OPTS
+          value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -XX:+UseContainerSupport -Djava.security.egd=file:/dev/./urandom -Dspring.jmx.enabled=false -Dspring.backgroundpreinitializer.ignore=true"
+        # Spring Boot Optimization / Spring Boot 优化
+        - name: SPRING_JPA_SHOW_SQL
+          value: "false"
+        - name: SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL
+          value: "false"
         # Liveness Probe - Check if container is alive
         # 存活性探针 - 检查容器是否存活
         livenessProbe:
           httpGet:
             path: /actuator/health/liveness
             port: 8080
-          initialDelaySeconds: 120  # Wait 2 minutes before first check / 首次检查前等待 2 分钟
-          periodSeconds: 30         # Check every 30 seconds / 每 30 秒检查一次
+          initialDelaySeconds: 60  # Wait 1 minute before first check (reduced from 120) / 首次检查前等待 1 分钟（从 120 减少）
+          periodSeconds: 30        # Check every 30 seconds / 每 30 秒检查一次
           timeoutSeconds: 5
           failureThreshold: 3       # Restart after 3 failures / 3 次失败后重启
           successThreshold: 1
@@ -117,27 +126,28 @@ spec:
           httpGet:
             path: /actuator/health/readiness
             port: 8080
-          initialDelaySeconds: 60  # Wait 1 minute before first check / 首次检查前等待 1 分钟
+          initialDelaySeconds: 30  # Wait 30 seconds before first check (reduced from 60) / 首次检查前等待 30 秒（从 60 减少）
           periodSeconds: 10        # Check every 10 seconds / 每 10 秒检查一次
           timeoutSeconds: 3
           failureThreshold: 3       # Mark as not ready after 3 failures / 3 次失败后标记为未就绪
           successThreshold: 1
-        # Startup Probe - Allow more time for application startup
-        # 启动探针 - 允许应用程序有更多启动时间
+        # Startup Probe - Optimized for faster detection
+        # 启动探针 - 优化以更快检测
         startupProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 0
-          periodSeconds: 10        # Check every 10 seconds / 每 10 秒检查一次
-          timeoutSeconds: 5
-          failureThreshold: 40     # Allow up to 400 seconds (6.7 minutes) for startup
-                                   # 允许最多 400 秒（6.7 分钟）启动时间
-        # Resource Limits and Requests / 资源限制和请求
+          initialDelaySeconds: 10  # Start checking after 10 seconds / 10 秒后开始检查
+          periodSeconds: 5         # Check every 5 seconds / 每 5 秒检查一次
+          timeoutSeconds: 3
+          failureThreshold: 24     # Allow up to 120 seconds (2 minutes) for startup
+                                   # 允许最多 120 秒（2 分钟）启动时间
+        # Resource Limits and Requests - Optimized for faster startup
+        # 资源限制和请求 - 优化以加快启动
         resources:
           requests:
             memory: "512Mi"  # Minimum memory required / 所需最小内存
-            cpu: "300m"      # Minimum CPU required / 所需最小 CPU
+            cpu: "500m"      # Increased CPU for faster startup / 增加 CPU 以加快启动
           limits:
             memory: "1Gi"   # Maximum memory allowed / 允许的最大内存
             cpu: "1000m"    # Maximum CPU allowed / 允许的最大 CPU

@@ -1,0 +1,139 @@
+# ============================================================================
+# Optimized Deployment Configuration
+# 优化的部署配置
+# ============================================================================
+#
+# This deployment includes optimizations for faster Pod startup:
+# - Optimized startup probe configuration
+# - JVM parameters for faster startup
+# - Resource requests/limits optimization
+#
+# 该部署包括用于加快 Pod 启动的优化：
+# - 优化的启动探针配置
+# - 用于加快启动的 JVM 参数
+# - 资源请求/限制优化
+#
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-k8s-demo
+  labels:
+    app: spring-k8s-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-k8s-demo
+  template:
+    metadata:
+      labels:
+        app: spring-k8s-demo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: spring-k8s-demo
+        image: spring-k8s-demo:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        env:
+        - name: SPRING_APPLICATION_NAME
+          value: "spring-k8s-demo"
+        # JVM Optimization Parameters / JVM 优化参数
+        - name: JAVA_OPTS
+          value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -XX:+UseContainerSupport -Djava.security.egd=file:/dev/./urandom -Dspring.jmx.enabled=false -Dspring.backgroundpreinitializer.ignore=true"
+        # Spring Boot Optimization / Spring Boot 优化
+        - name: SPRING_JPA_SHOW_SQL
+          value: "false"
+        - name: SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL
+          value: "false"
+        # Database Configuration / 数据库配置
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_DATABASE
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+        # Redis Configuration / Redis 配置
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: REDIS_PASSWORD
+        # JWT Configuration / JWT 配置
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: JWT_SECRET
+        - name: JWT_EXPIRATION
+          value: "86400000"
+        # Optimized Startup Probe - Reduced wait time / 优化的启动探针 - 减少等待时间
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 10  # Start checking after 10 seconds / 10 秒后开始检查
+          periodSeconds: 5          # Check every 5 seconds / 每 5 秒检查一次
+          timeoutSeconds: 3
+          failureThreshold: 24     # Allow up to 120 seconds (2 minutes) / 允许最多 120 秒（2 分钟）
+        # Liveness Probe / 存活性探针
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60  # Reduced from 120 / 从 120 减少到 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # Readiness Probe / 就绪性探针
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30  # Reduced from 60 / 从 60 减少到 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        # Optimized Resource Limits / 优化的资源限制
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"      # Increased from 300m for faster startup / 从 300m 增加到 500m 以加快启动
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+
